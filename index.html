@@ -179,6 +179,7 @@ img{display:block}
 .cache-panel.hidden{display:none}
 .cache-panel.ready{border-color:rgba(201,163,106,.55);background:rgba(201,163,106,.12)}
 .cache-panel.slim{padding:11px 20px}
+.cache-panel.retry{cursor:pointer}
 .cache-panel.slim .cp-bar,.cache-panel.slim .cp-detail{display:none}
 .cp-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
 .cp-title{font-family:var(--serif);font-size:15px;letter-spacing:1.5px;color:var(--ink)}
@@ -1202,7 +1203,9 @@ function finishCache(){
     : '✓ 全部下载完成 · 现在可以开始试听';
   if(cacheFailed){
     if(lastCacheError) $('#cacheDetail').textContent += `（原因：${lastCacheError}）`;
-    toast(`${cacheFailed} 首未预缓存，将改为在线播放，不影响试听`);
+    panel.classList.add('retry');
+    $('#cacheTitle').textContent = `已缓存 ${cStats.total - cacheFailed}/${cStats.total} 首 · 点击此处重试`;
+    toast(`${cacheFailed} 首未预缓存，将改为在线播放（点进度条可重试）`);
   }else{
     toast('曲库已就绪，现在可以开始试听 ♪');
   }
@@ -1632,6 +1635,15 @@ function bind(){
   });
 
   /* 大图 / 文本查看器 */
+  $('#cachePanel').addEventListener('click', ()=>{
+    const p = $('#cachePanel');
+    if(!p.classList.contains('retry')) return;
+    p.classList.remove('retry','slim');
+    cacheFailed = 0;
+    lastCacheError = '';
+    precacheNewTracks();
+  });
+
   $('#lbClose').addEventListener('click', closeLightbox);
   $('#lightbox').addEventListener('click', e=>{ if(e.target === $('#lightbox')) closeLightbox(); });
 
