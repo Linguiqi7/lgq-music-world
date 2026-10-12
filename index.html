@@ -164,6 +164,41 @@ img{display:block}
   box-shadow:0 4px 12px rgba(143,106,63,.28);
 }
 
+/* 曲库预缓存进度 */
+.cache-panel{
+  max-width:1180px;margin:18px auto 0;
+  padding:16px 22px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:16px;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  box-shadow:var(--shadow);
+  transition:all .35s ease;
+}
+.cache-panel.hidden{display:none}
+.cache-panel.ready{border-color:rgba(201,163,106,.55);background:rgba(201,163,106,.12)}
+.cache-panel.slim{padding:11px 20px}
+.cache-panel.slim .cp-bar,.cache-panel.slim .cp-detail{display:none}
+.cp-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.cp-title{font-family:var(--serif);font-size:15px;letter-spacing:1.5px;color:var(--ink)}
+.cache-panel.ready .cp-title{color:var(--accent-2)}
+.cp-pct{font-family:var(--serif);font-size:17px;color:var(--accent-2);font-variant-numeric:tabular-nums}
+.cp-bar{
+  margin-top:12px;height:6px;border-radius:99px;
+  background:rgba(255,255,255,.08);overflow:hidden;
+}
+.cp-bar i{
+  display:block;height:100%;width:0;
+  border-radius:99px;
+  background:linear-gradient(90deg,#c09a67,var(--accent-2));
+  transition:width .25s ease;
+}
+.cp-detail{
+  margin-top:9px;font-size:12px;color:var(--ink-2);
+  letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
 /* 迁移提示 */
 .migrate-bar{
   max-width:1180px;margin:18px auto 0;
@@ -672,6 +707,15 @@ footer b{color:var(--accent-2);font-family:var(--serif)}
 </div>
 
 <main>
+  <div class="cache-panel hidden" id="cachePanel">
+    <div class="cp-head">
+      <span class="cp-title" id="cacheTitle">正在为试听做准备…</span>
+      <span class="cp-pct" id="cachePct">0%</span>
+    </div>
+    <div class="cp-bar"><i id="cacheBar"></i></div>
+    <div class="cp-detail" id="cacheDetail">准备中…</div>
+  </div>
+
   <section id="emptyState" class="hidden">
     <div class="dropzone" id="dropzone">
       <div class="dz-icon">♪</div>
@@ -1042,17 +1086,147 @@ async function handleFiles(files){
   }
   await loadTracks();
   render();
+  if(added) precacheNewTracks();
   if(added) toast(`成功收录 ${added} 首曲目 ♪ 记得「发布到公网」让他人也能听到`);
   if(failed && !added) toast('收录失败，请确认文件为 MP3 / WAV / M4A 格式');
   else if(failed) toast(`另有 ${failed} 个文件未能收录（支持 MP3 / WAV / M4A）`);
+}
+
+/* ================= 曲库预缓存（解决网络卡顿：先整体下载，再本地播放） ================= */
+const AUDIO_CACHE_NAME = 'lgq-audio-v2';
+const blobURLs = new Map();       // trackId -> blob URL（本地播放，绝不断流）
+let cacheReady = false;
+let cacheFailed = 0;
+let cacheStore = null;
+let cStats = { done:0, total:0, bytes:0, totalBytes:0 };
+
+function fmtMB(n){ return (n / 1048576).toFixed(1) + ' MB'; }
+
+function cachePct(){
+  if(cStats.totalBytes > 0) return Math.min(100, Math.round(cStats.bytes / cStats.totalBytes * 100));
+  return cStats.total ? Math.round(cStats.done / cStats.total * 100) : 0;
+}
+function updateCacheUI(){
+  const p = cachePct();
+  $('#cacheBar').style.width = p + '%';
+  $('#cachePct').textContent = p + '%';
+  const sizeTxt = cStats.totalBytes > 0
+    ? fmtMB(cStats.bytes) + ' / ' + fmtMB(cStats.totalBytes)
+    : fmtMB(cStats.bytes);
+  $('#cacheDetail').textContent = `已就绪 ${cStats.done}/${cStats.total} 首 · ${sizeTxt}`;
+}
+async function fetchTrackBlob(t, onChunk){
+  const url = t.audio;
+  if(cacheStore){
+    try{
+      const hit = await cacheStore.match(url);
+      if(hit){
+        const b = await hit.blob();
+        onChunk(b.size);
+        return b;
+      }
+    }catch(e){}
+  }
+  const resp = await fetch(url, {cache:'no-store'});
+  if(!resp.ok) throw new Error('HTTP ' + resp.status);
+  const reader = resp.body.getReader();
+  const chunks = [];
+  for(;;){
+    const {done, value} = await reader.read();
+    if(done) break;
+    chunks.push(value);
+    onChunk(value.length);
+  }
+  const blob = new Blob(chunks, {type: resp.headers.get('content-type') || 'audio/mpeg'});
+  if(cacheStore){
+    try{ await cacheStore.put(url, new Response(blob, {headers:{'Content-Type': blob.type}})); }catch(e){}
+  }
+  return blob;
+}
+async function precacheLibrary(){
+  const list = tracks.filter(t => t.audio);
+  cStats = {
+    done: 0,
+    total: list.length,
+    bytes: 0,
+    totalBytes: list.reduce((s,t)=> s + (typeof t.size === 'number' ? t.size : 0), 0)
+  };
+  if(!list.length) return;
+  try{ cacheStore = await caches.open(AUDIO_CACHE_NAME); }catch(e){ cacheStore = null; }
+  $('#cachePanel').classList.remove('hidden');
+  $('#cacheTitle').textContent = '正在为试听做准备…（下载中）';
+  updateCacheUI();
+
+  let idx = 0;
+  const worker = async () => {
+    while(idx < list.length){
+      const t = list[idx++];
+      try{
+        const blob = await fetchTrackBlob(t, n => { cStats.bytes += n; updateCacheUI(); });
+        if(!blobURLs.has(t.id)) blobURLs.set(t.id, URL.createObjectURL(blob));
+      }catch(e){
+        cacheFailed++;
+      }
+      cStats.done++;
+      updateCacheUI();
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  finishCache();
+}
+function finishCache(){
+  cacheReady = true;
+  const panel = $('#cachePanel');
+  panel.classList.add('ready');
+  $('#cacheBar').style.width = '100%';
+  $('#cachePct').textContent = '100%';
+  $('#cacheDetail').textContent = `共 ${cStats.total} 首 · ${fmtMB(cStats.bytes)} 已就绪`;
+  $('#cacheTitle').textContent = cacheFailed
+    ? `已缓存 ${cStats.total - cacheFailed}/${cStats.total} 首 · 现在可以开始试听`
+    : '✓ 全部下载完成 · 现在可以开始试听';
+  if(cacheFailed) toast(`${cacheFailed} 首缓存失败，将改为在线播放`);
+  else toast('曲库已就绪，现在可以开始试听 ♪');
+  setTimeout(()=> panel.classList.add('slim'), 7000);
+}
+
+async function precacheNewTracks(){
+  const list = tracks.filter(t => t.audio && !blobURLs.has(t.id));
+  if(!list.length) return;
+  if(!cacheStore){ try{ cacheStore = await caches.open(AUDIO_CACHE_NAME); }catch(e){ cacheStore = null; } }
+  const panel = $('#cachePanel');
+  panel.classList.remove('hidden','slim','ready');
+  $('#cacheTitle').textContent = '正在缓存新增曲目…';
+  cStats.total += list.length;
+  cStats.totalBytes += list.reduce((s,t)=> s + (typeof t.size === 'number' ? t.size : 0), 0);
+  updateCacheUI();
+  let idx = 0;
+  const worker = async () => {
+    while(idx < list.length){
+      const t = list[idx++];
+      try{
+        const blob = await fetchTrackBlob(t, n => { cStats.bytes += n; updateCacheUI(); });
+        blobURLs.set(t.id, URL.createObjectURL(blob));
+      }catch(e){ cacheFailed++; }
+      cStats.done++;
+      updateCacheUI();
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  panel.classList.add('ready');
+  $('#cacheTitle').textContent = '✓ 新增曲目已缓存完成 · 可以继续试听';
+  setTimeout(()=> panel.classList.add('slim'), 5000);
 }
 
 /* ================= 播放器 ================= */
 function playTrack(id){
   const t = tracks.find(x=>x.id === id);
   if(!t) return;
+  if(!cacheReady){
+    toast(`曲库正在缓存中，请稍候…（${cachePct()}%）`);
+    return;
+  }
   currentId = id;
-  audio.src = t.audio;
+  audio.src = blobURLs.get(id) || t.audio;
   audio.play().catch(()=>{});
   updatePlayer();
   markPlayingCard();
@@ -1270,6 +1444,7 @@ async function checkLegacy(){
         $('#migrateBar').classList.add('hidden');
         await loadTracks();
         render();
+        precacheNewTracks();
         toast(`成功导入 ${n} 首旧曲目 ♪`);
       });
     }else{
@@ -1508,6 +1683,7 @@ function bind(){
   bind();
   render();
   checkLegacy();
+  precacheLibrary();   // 进入页面即开始下载全部曲目，完成后提示可试听
 })();
 </script>
 </body>

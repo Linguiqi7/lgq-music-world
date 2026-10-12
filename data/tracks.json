@@ -26,7 +26,8 @@
       "duration": 156.650667,
       "createdAt": 1791783466468,
       "updatedAt": 1791807022238,
-      "order": 0
+      "order": 0,
+      "size": 2933262
     },
     {
       "id": "9737f0060af7",
@@ -54,7 +55,8 @@
       "duration": 105.578667,
       "createdAt": 1791783439634,
       "updatedAt": 1791787891271,
-      "order": 1
+      "order": 1,
+      "size": 1979720
     },
     {
       "id": "14edede0e0c7",
@@ -82,7 +84,8 @@
           "path": "data/captions/14edede0e0c7_up1791785453508_doc0.txt"
         }
       ],
-      "order": 2
+      "order": 2,
+      "size": 3315879
     },
     {
       "id": "39a1c18b4a5d",
@@ -110,7 +113,8 @@
         }
       ],
       "note": "“他也不得不承认，罗浮的秋是最迷人的秋，而他看过那样的红枫，眼里再也容不进其他的景象了。”",
-      "order": 3
+      "order": 3,
+      "size": 3385152
     },
     {
       "id": "9a3e9945de2d",
@@ -133,7 +137,8 @@
       "duration": 156.416,
       "createdAt": 1791783595085,
       "updatedAt": 1791807305168,
-      "order": 5
+      "order": 5,
+      "size": 2930374
     },
     {
       "id": "f83dfa40e26e",
@@ -161,7 +166,8 @@
       "duration": 72.341333,
       "createdAt": 1791783449895,
       "updatedAt": 1791787866749,
-      "order": 4
+      "order": 4,
+      "size": 1355518
     },
     {
       "id": "465359783f98",
@@ -184,7 +190,8 @@
       "duration": 132.8,
       "createdAt": 1791783454975,
       "updatedAt": 1791808155918,
-      "order": 6
+      "order": 6,
+      "size": 2488743
     },
     {
       "id": "1f213cb5cad5",
@@ -212,7 +219,8 @@
       "duration": 163.541333,
       "createdAt": 1791783459849,
       "updatedAt": 1791807827667,
-      "order": 7
+      "order": 7,
+      "size": 3063612
     },
     {
       "id": "29270aa690da",
@@ -234,7 +242,8 @@
       "updatedAt": 1791808147528,
       "captionImgs": [],
       "captionFiles": [],
-      "note": "--- \"Where is the dawn?\""
+      "note": "--- \"Where is the dawn?\"",
+      "size": 2396160
     }
   ]
 }
