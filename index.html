@@ -6,9 +6,17 @@
 <meta name="color-scheme" content="light">
 <title>lgq的音乐世界</title>
 <link rel="icon" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23b08954'/%3E%3Ctext x='32' y='45' font-size='36' text-anchor='middle' fill='white' font-family='Georgia,serif'%3E%E2%99%AA%3C/text%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<script>
+/* 非阻塞加载谷歌字体：先用系统字体渲染，字体到位后自动替换，避免阻塞首屏 */
+(function(){
+  var l = document.createElement('link');
+  l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap';
+  l.media = 'print';
+  l.onload = function(){ this.media = 'all'; };
+  document.head.appendChild(l);
+})();
+</script>
 <style>
 :root{
   --bg:#0d1320;
@@ -1120,6 +1128,73 @@ function updateCacheUI(){
     : fmtMB(cStats.bytes);
   $('#cacheDetail').textContent = `已就绪 ${cStats.done}/${cStats.total} 首（就绪即可试听）· ${sizeTxt}`;
 }
+const CHUNK_SIZE = 1048576;   // 分片大小 1MB
+const MAX_CONCURRENCY = 6;    // 单曲内部最多同时下 6 个分片
+
+async function fetchWhole(url, onChunk){
+  const resp = await fetch(url);
+  if(!resp.ok) throw new Error('HTTP ' + resp.status);
+  const chunks = [];
+  if(resp.body && resp.body.getReader){
+    const reader = resp.body.getReader();
+    for(;;){
+      const {done, value} = await reader.read();
+      if(done) break;
+      chunks.push(value);
+      onChunk(value.length);
+    }
+  }else{
+    const ab = await resp.arrayBuffer();
+    chunks.push(new Uint8Array(ab));
+    onChunk(ab.byteLength);
+  }
+  return {
+    blob: new Blob(chunks, {type: resp.headers.get('content-type') || 'audio/mpeg'}),
+    size: chunks.reduce((s,c)=> s + c.length, 0),
+    total: null
+  };
+}
+
+/* 分片下载：先探体积，再并发取各段；单段失败可小范围重试 */
+async function fetchByChunks(url, onChunk){
+  const probe = await fetch(url, {headers: {'Range': 'bytes=0-0'}});
+  if(!probe.ok) throw new Error('HTTP ' + probe.status);
+  const cr = probe.headers.get('Content-Range') || '';
+  const total = parseInt((cr.split('/')[1] || '').trim(), 10);
+  if(!total || !isFinite(total) || total <= CHUNK_SIZE) return fetchWhole(url, onChunk);
+  const first = new Uint8Array(await probe.arrayBuffer());
+  onChunk(first.length);
+  const n = Math.ceil((total - 1) / CHUNK_SIZE) - 1;   // 首片已单独取
+  const out = new Array(n + 1);
+  out[0] = first;
+  let next = 0;
+  const worker = async () => {
+    while(next < n){
+      const i = next++;
+      const s = (i + 1) * CHUNK_SIZE;
+      const e = Math.min(s + CHUNK_SIZE - 1, total - 1);
+      let buf = null, lastErr = '';
+      for(let attempt = 1; attempt <= 4 && !buf; attempt++){
+        try{
+          const r = await fetch(url, {headers: {'Range': `bytes=${s}-${e}`}});
+          if(!r.ok) throw new Error('HTTP ' + r.status);
+          buf = new Uint8Array(await r.arrayBuffer());
+        }catch(err){
+          lastErr = err.message;
+          if(attempt < 4) await new Promise(z => setTimeout(z, 300 * attempt));
+        }
+      }
+      if(!buf) throw new Error(lastErr || '分片下载失败');
+      out[i + 1] = buf;
+      onChunk(buf.length);
+    }
+  };
+  const ws = [];
+  for(let k = 0; k < Math.min(MAX_CONCURRENCY, Math.max(1, n)); k++) ws.push(worker());
+  await Promise.all(ws);
+  return {blob: new Blob(out, {type: probe.headers.get('content-type') || 'audio/mpeg'}), size: total, total};
+}
+
 async function fetchTrackBlob(t, onChunk){
   const url = t.audio;
   if(cacheStore){
@@ -1132,17 +1207,8 @@ async function fetchTrackBlob(t, onChunk){
       }
     }catch(e){}
   }
-  const resp = await fetch(url);
-  if(!resp.ok) throw new Error('HTTP ' + resp.status);
-  const reader = resp.body.getReader();
-  const chunks = [];
-  for(;;){
-    const {done, value} = await reader.read();
-    if(done) break;
-    chunks.push(value);
-    onChunk(value.length);
-  }
-  const blob = new Blob(chunks, {type: resp.headers.get('content-type') || 'audio/mpeg'});
+  const res = await fetchByChunks(url, onChunk);
+  const blob = res.blob;
   if(cacheStore){
     try{ await cacheStore.put(url, new Response(blob, {headers:{'Content-Type': blob.type}})); }catch(e){}
   }
@@ -1185,7 +1251,9 @@ async function precacheLibrary(){
       refreshCacheMarks();
     }
   };
-  await Promise.all([worker(), worker(), worker(), worker(), worker(), worker()]);
+  const ws = [];
+  for(let k = 0; k < Math.min(12, Math.max(1, list.length)); k++) ws.push(worker());
+  await Promise.all(ws);
   finishCache();
 }
 function refreshCacheMarks(){
@@ -1716,10 +1784,34 @@ function bind(){
   await checkAdmin();
   await loadTracks();
   bind();
-  render();
+  render();            // 曲库列表立即渲染，不等任何媒体资源
   checkLegacy();
-  precacheLibrary();   // 进入页面即开始下载全部曲目，完成后提示可试听
+  precacheLibrary();   // 后台开始预缓存，完成后提示可试听
 })();
+
+/* 点击「播放」但该曲尚未缓存时：后台优先缓存它，缓存好立即自动播放 */
+document.addEventListener('click', async e=>{
+  const row = e.target.closest('.row');
+  if(!row) return;
+  const act = e.target.closest('[data-act]');
+  if(!act || act.dataset.act !== 'play') return;
+  const id = row.dataset.id;
+  if(blobURLs.has(id) || cacheReady) return;
+  const t = tracks.find(x => x.id === id);
+  if(!t || t._loading) return;
+  t._loading = true;
+  toast(`正在优先缓存《${t.title}》…`);
+  try{
+    const blob = await fetchTrackBlob(t, n => { cStats.bytes += n; updateCacheUI(); });
+    blobURLs.set(id, URL.createObjectURL(blob));
+    refreshCacheMarks();
+    playTrack(id);
+  }catch(err){
+    toast('该曲目缓存失败，将在网络恢复后可播放');
+  }finally{
+    t._loading = false;
+  }
+});
 </script>
 </body>
 </html>
