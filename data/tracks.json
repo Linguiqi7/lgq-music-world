@@ -13,7 +13,7 @@
         "刃恒",
         "应枫"
       ],
-      "audio": "data/audio/ca2a863a8be9.m4a",
+      "audio": "https://lgq-music-1505082252.cos.ap-shanghai.myqcloud.com/audio/ca2a863a8be9.m4a",
       "cover": null,
       "captionImgs": [],
       "captionFiles": [
@@ -42,7 +42,7 @@
         "刃恒",
         "应枫"
       ],
-      "audio": "data/audio/9737f0060af7.m4a",
+      "audio": "https://lgq-music-1505082252.cos.ap-shanghai.myqcloud.com/audio/9737f0060af7.m4a",
       "cover": null,
       "captionImgs": [],
       "captionFiles": [
@@ -70,7 +70,7 @@
         "应枫",
         "刃恒"
       ],
-      "audio": "data/audio/14edede0e0c7.mp3",
+      "audio": "https://lgq-music-1505082252.cos.ap-shanghai.myqcloud.com/audio/14edede0e0c7.mp3",
       "cover": null,
       "fmt": "WAV",
       "duration": 138.115805,
@@ -99,7 +99,7 @@
         "刃恒",
         "应枫"
       ],
-      "audio": "data/audio/39a1c18b4a5d.mp3",
+      "audio": "https://lgq-music-1505082252.cos.ap-shanghai.myqcloud.com/audio/39a1c18b4a5d.mp3",
       "cover": null,
       "fmt": "WAV",
       "duration": 141.01,
@@ -129,7 +129,7 @@
         "刃恒",
         "应枫"
       ],
-      "audio": "data/audio/9a3e9945de2d.m4a",
+      "audio": "https://lgq-music-1505082252.cos.ap-shanghai.myqcloud.com/audio/9a3e9945de2d.m4a",
       "cover": null,
       "captionImgs": [],
       "captionFiles": [],
@@ -153,7 +153,7 @@
         "刃恒",
         "应枫"
       ],
-      "audio": "data/audio/f83dfa40e26e.m4a",
+      "audio": "https://lgq-music-1505082252.cos.ap-shanghai.myqcloud.com/audio/f83dfa40e26e.m4a",
       "cover": null,
       "captionImgs": [],
       "captionFiles": [
@@ -182,7 +182,7 @@
         "刃恒",
         "应枫"
       ],
-      "audio": "data/audio/465359783f98.m4a",
+      "audio": "https://lgq-music-1505082252.cos.ap-shanghai.myqcloud.com/audio/465359783f98.m4a",
       "cover": null,
       "captionImgs": [],
       "captionFiles": [],
@@ -206,7 +206,7 @@
         "刃恒",
         "应枫"
       ],
-      "audio": "data/audio/1f213cb5cad5.m4a",
+      "audio": "https://lgq-music-1505082252.cos.ap-shanghai.myqcloud.com/audio/1f213cb5cad5.m4a",
       "cover": null,
       "captionImgs": [],
       "captionFiles": [
@@ -234,7 +234,7 @@
         "摸鱼",
         "刃恒"
       ],
-      "audio": "data/audio/29270aa690da.mp3",
+      "audio": "https://lgq-music-1505082252.cos.ap-shanghai.myqcloud.com/audio/29270aa690da.mp3",
       "cover": null,
       "fmt": "WAV",
       "duration": 99.809025,
