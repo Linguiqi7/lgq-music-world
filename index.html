@@ -406,6 +406,8 @@ main{max-width:1180px;margin:0 auto;padding:8px 28px 0}
   transition:transform .15s ease;
 }
 .r-play:hover{transform:scale(1.08)}
+.row:not(.ready) .r-play{opacity:.4;filter:grayscale(.35);box-shadow:none}
+.row:not(.ready) .r-title{color:#8b93a3}
 .mv{display:none;flex-direction:column;gap:2px;flex:none}
 .admin .mv{display:flex}
 .mv button{
@@ -1029,6 +1031,7 @@ function render(){
   $('#tagbar').classList.toggle('hidden', !has);
   $('#noResult').classList.toggle('hidden', !(has && viewList.length === 0));
   $('#grid').innerHTML = viewList.map(rowHTML).join('');
+  refreshCacheMarks();
   const total = tracks.reduce((s,t)=>s+(t.duration||0), 0);
   $('#statCount').textContent = tracks.length;
   $('#statDur').textContent = fmtTime(total);
@@ -1113,7 +1116,7 @@ function updateCacheUI(){
   const sizeTxt = cStats.totalBytes > 0
     ? fmtMB(cStats.bytes) + ' / ' + fmtMB(cStats.totalBytes)
     : fmtMB(cStats.bytes);
-  $('#cacheDetail').textContent = `已就绪 ${cStats.done}/${cStats.total} 首 · ${sizeTxt}`;
+  $('#cacheDetail').textContent = `已就绪 ${cStats.done}/${cStats.total} 首（就绪即可试听）· ${sizeTxt}`;
 }
 async function fetchTrackBlob(t, onChunk){
   const url = t.audio;
@@ -1169,10 +1172,14 @@ async function precacheLibrary(){
       }
       cStats.done++;
       updateCacheUI();
+      refreshCacheMarks();
     }
   };
-  await Promise.all([worker(), worker(), worker()]);
+  await Promise.all([worker(), worker(), worker(), worker(), worker(), worker()]);
   finishCache();
+}
+function refreshCacheMarks(){
+  $$('.row').forEach(r=> r.classList.toggle('ready', blobURLs.has(r.dataset.id)));
 }
 function finishCache(){
   cacheReady = true;
@@ -1211,7 +1218,7 @@ async function precacheNewTracks(){
       updateCacheUI();
     }
   };
-  await Promise.all([worker(), worker(), worker()]);
+  await Promise.all([worker(), worker(), worker(), worker()]);
   panel.classList.add('ready');
   $('#cacheTitle').textContent = '✓ 新增曲目已缓存完成 · 可以继续试听';
   setTimeout(()=> panel.classList.add('slim'), 5000);
@@ -1221,12 +1228,15 @@ async function precacheNewTracks(){
 function playTrack(id){
   const t = tracks.find(x=>x.id === id);
   if(!t) return;
-  if(!cacheReady){
-    toast(`曲库正在缓存中，请稍候…（${cachePct()}%）`);
+  const cached = blobURLs.get(id);
+  if(!cached){
+    toast(cacheReady
+      ? `《${t.title}》正在缓存中，稍等片刻…`
+      : `《${t.title}》还在缓存（总进度 ${cachePct()}%），可先听已就绪的曲目 ♪`);
     return;
   }
   currentId = id;
-  audio.src = blobURLs.get(id) || t.audio;
+  audio.src = cached;
   audio.play().catch(()=>{});
   updatePlayer();
   markPlayingCard();
