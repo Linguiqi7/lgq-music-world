@@ -239,67 +239,43 @@ main{max-width:1180px;margin:0 auto;padding:8px 28px 0}
   padding:60px 0;font-size:15px;letter-spacing:1px;
 }
 
-/* ---------- 曲目卡片 ---------- */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(212px,1fr));
-  gap:24px;
-}
-.card{
+/* ---------- 曲目列表（网易云风格） ---------- */
+.list{display:flex;flex-direction:column;gap:8px}
+.row{
   position:relative;
+  display:flex;align-items:center;gap:14px;
+  padding:12px 16px;
   background:var(--panel);
   border:1px solid var(--line);
-  border-radius:var(--radius);
-  overflow:hidden;
-  box-shadow:var(--shadow);
+  border-radius:14px;
   backdrop-filter:blur(8px);
   -webkit-backdrop-filter:blur(8px);
-  transition:transform .2s ease,box-shadow .2s ease;
   cursor:pointer;
+  transition:background .16s ease,border-color .16s ease,transform .16s ease;
 }
-.card:hover{transform:translateY(-5px);box-shadow:var(--shadow-lg)}
-.cover{position:relative;aspect-ratio:1/1;overflow:hidden;background:var(--sand)}
-.cover img{width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
-.card:hover .cover img{transform:scale(1.05)}
-.play-overlay{
-  position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  background:rgba(51,41,28,0);
-  opacity:0;
-  transition:all .22s ease;
+.row:hover{background:rgba(30,40,60,.85);border-color:rgba(235,225,205,.28);transform:translateX(3px)}
+.row.active{border-color:var(--accent);background:rgba(201,163,106,.10)}
+.r-num{
+  width:36px;flex:none;text-align:center;
+  font-family:var(--serif);font-size:19px;font-style:italic;
+  color:#5d6779;
 }
-.card:hover .play-overlay{opacity:1;background:rgba(0,0,0,.38)}
-.play-overlay .pbtn{
-  width:58px;height:58px;border-radius:50%;
-  background:rgba(255,253,249,.95);
-  color:var(--accent-2);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 8px 22px rgba(0,0,0,.25);
-  transition:transform .18s ease;
+.row.active .r-num .n{display:none}
+.r-num .eq{display:none;justify-content:center}
+.row.active .r-num .eq{display:flex}
+.r-cover{
+  width:52px;height:52px;flex:none;
+  border-radius:10px;overflow:hidden;
+  background:var(--sand);
+  box-shadow:0 3px 10px rgba(0,0,0,.3);
 }
-.play-overlay .pbtn:hover{transform:scale(1.1)}
-.eq{
-  position:absolute;left:12px;bottom:12px;
-  display:none;align-items:flex-end;gap:3px;
-  height:18px;
-  padding:4px 6px;
-  background:rgba(51,41,28,.45);
-  border-radius:8px;
-  backdrop-filter:blur(3px);
-}
-.card.active .eq{display:flex}
-.eq span{width:3px;height:8px;background:#fff;border-radius:2px;animation:eq 1s ease-in-out infinite}
-.eq span:nth-child(2){animation-delay:.22s}
-.eq span:nth-child(3){animation-delay:.44s}
-.card:not(.playing) .eq span{animation-play-state:paused}
-@keyframes eq{0%,100%{height:5px}50%{height:14px}}
-.card.active{border-color:var(--accent)}
-.cbody{padding:14px 16px 16px}
-.ctitle{
-  font-family:var(--serif);font-size:16.5px;font-weight:600;
-  letter-spacing:.5px;
+.r-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.r-main{flex:1;min-width:0}
+.r-title{
+  font-family:var(--serif);font-size:16.5px;font-weight:600;letter-spacing:.5px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
+.row.active .r-title{color:var(--accent-2)}
 /* 配文配图 / 附件 */
 .cap-tools{display:flex;gap:8px;margin-top:8px}
 .cap-btn{
@@ -367,19 +343,47 @@ main{max-width:1180px;margin:0 auto;padding:8px 28px 0}
   font-size:17px;transition:background .15s ease;
 }
 .lb-close:hover{background:rgba(255,255,255,.24)}
-.ccap{
-  margin-top:6px;
+.r-sub{
+  margin-top:5px;
+  display:flex;align-items:center;gap:7px;
   font-size:12.5px;color:var(--ink-2);
-  font-style:italic;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  min-height:19px;
+  white-space:nowrap;overflow:hidden;
 }
-.ccap .nocap{color:#5d6779}
-.ctags{
-  margin-top:9px;
-  display:flex;gap:6px;flex-wrap:wrap;
+.r-sub .r-note{font-style:italic;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto}
+.r-sub .r-note.nocap{color:#5d6779}
+.r-dur{
+  flex:none;font-size:11.5px;color:var(--ink-2);
+  font-variant-numeric:tabular-nums;
+  align-self:flex-start;margin-top:2px;
 }
-.ctags:empty{display:none}
+.r-acts{display:flex;align-items:center;gap:4px;flex:none}
+.r-icon{
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--ink-2);transition:all .15s ease;
+}
+.r-icon:hover{background:var(--sand);color:var(--accent-2)}
+.r-play{
+  width:38px;height:38px;border-radius:50%;flex:none;
+  background:linear-gradient(135deg,#c09a67,var(--accent-2));
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px rgba(143,106,63,.35);
+  transition:transform .15s ease;
+}
+.r-play:hover{transform:scale(1.08)}
+.mv{display:none;flex-direction:column;gap:2px;flex:none}
+.admin .mv{display:flex}
+.mv button{
+  width:22px;height:17px;line-height:15px;font-size:9px;
+  color:#667082;border-radius:4px;text-align:center;
+}
+.mv button:hover{background:var(--sand);color:var(--accent-2)}
+.eq{display:none;align-items:flex-end;gap:3px;height:16px}
+.eq span{width:3px;height:8px;background:var(--accent-2);border-radius:2px;animation:eq 1s ease-in-out infinite}
+.eq span:nth-child(2){animation-delay:.22s}
+.eq span:nth-child(3){animation-delay:.44s}
+.row:not(.playing) .eq span{animation-play-state:paused}
+@keyframes eq{0%,100%{height:5px}50%{height:14px}}
 .mini-tag{
   font-size:10.5px;letter-spacing:1px;
   color:var(--accent-2);
@@ -387,28 +391,14 @@ main{max-width:1180px;margin:0 auto;padding:8px 28px 0}
   border-radius:999px;
   padding:2px 9px;
   font-weight:600;
-}
-.cmeta{
-  margin-top:10px;display:flex;align-items:center;gap:8px;
-  font-size:11.5px;color:var(--ink-2);
+  flex:none;
 }
 .fmt{
   background:var(--sand);color:var(--accent-2);
   font-weight:700;font-size:10px;letter-spacing:1px;
   padding:2px 8px;border-radius:999px;
+  flex:none;
 }
-.edit-btn{
-  position:absolute;top:10px;right:10px;z-index:3;
-  width:34px;height:34px;border-radius:50%;
-  background:rgba(13,18,28,.82);
-  color:var(--accent-2);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 12px rgba(0,0,0,.18);
-  opacity:0;transition:all .2s ease;
-}
-.card:hover .edit-btn{opacity:1}
-.edit-btn:hover{background:var(--accent);color:#fff}
-.visitor .edit-btn{display:none}
 
 /* ---------- 弹窗 ---------- */
 .modal-mask{
@@ -630,6 +620,13 @@ footer b{color:var(--accent-2);font-family:var(--serif)}
 /* ---------- 响应式 ---------- */
 @media (max-width:760px){
   .hero-inner{padding:40px 20px 32px}
+  .r-cover{display:none}
+  .r-num{width:26px;font-size:16px}
+  .row{padding:11px 12px;gap:10px}
+  .row:hover{transform:none}
+  .r-title{font-size:15.5px}
+  .r-play{width:34px;height:34px}
+  .r-icon{width:28px;height:28px}
   .toolbar,main,.tagbar{padding-left:18px;padding-right:18px}
   .modal-body{flex-direction:column;align-items:center}
   .m-left{width:100%;display:flex;flex-direction:column;align-items:center}
@@ -700,7 +697,7 @@ footer b{color:var(--accent-2);font-family:var(--serif)}
       <span class="spacer" style="flex:1"></span>
       <button class="link-btn admin-only" id="btnPublish" title="将曲库发布到公网，供他人访问试听">☁ 发布到公网</button>
     </div>
-    <div class="grid" id="grid"></div>
+    <div class="list" id="grid"></div>
     <div class="no-result hidden" id="noResult">没有找到匹配的曲目，换个关键词或标签试试 ♪</div>
   </section>
 
@@ -875,6 +872,7 @@ const iconPause = '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M6.5
 const iconPrev  = '<svg viewBox="0 0 24 24" width="17" height="17"><path d="M6 6h2.2v12H6zM20 6v12L9.8 12z" fill="currentColor"/></svg>';
 const iconNext  = '<svg viewBox="0 0 24 24" width="17" height="17"><path d="M15.8 6H18v12h-2.2zM4 6v12l10.2-6z" fill="currentColor"/></svg>';
 const iconEdit  = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17l-1 3z"/></svg>';
+const iconInfo  = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01"/><path d="M12 11.5V16"/></svg>';
 
 /* ================= 默认封面 ================= */
 function hashSeed(str){
@@ -911,7 +909,12 @@ async function loadTracks(){
     const r = await fetch('data/tracks.json?t=' + Date.now(), {cache:'no-store'});
     if(r.ok){
       const j = await r.json();
-      tracks = (j.tracks || []).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      tracks = (j.tracks || []).slice().sort((a,b)=>{
+        const oa = (typeof a.order === 'number') ? a.order : Infinity;
+        const ob = (typeof b.order === 'number') ? b.order : Infinity;
+        if(oa !== ob) return oa - ob;
+        return (b.createdAt||0) - (a.createdAt||0);
+      });
     }else{
       tracks = [];
     }
@@ -940,23 +943,26 @@ async function checkAdmin(){
 }
 
 /* ================= 渲染 ================= */
-function cardHTML(t){
-  const dur = t.duration ? fmtTime(t.duration) : '';
+function rowHTML(t, i){
   const tags = (t.tags || []).map(tg=>`<span class="mini-tag">${esc(tg)}</span>`).join('');
-  const note = t.note ? esc(t.note)
-    : (ADMIN ? '<span class="nocap">暂无说明 · 点开添加</span>' : '');
-  return `<div class="card" data-id="${esc(t.id)}">
-    <div class="cover">
-      <img src="${esc(trackCover(t))}" alt="">
-      <div class="play-overlay"><button class="pbtn" data-act="play" title="播放">${iconPlay}</button></div>
-      <div class="eq"><span></span><span></span><span></span></div>
+  const note = t.note
+    ? `<span class="r-note" title="${esc(t.note)}">${esc(t.note)}</span>`
+    : (ADMIN ? '<span class="r-note nocap">点开右侧按钮添加说明</span>' : '');
+  const dur = t.duration ? `<span class="r-dur">${fmtTime(t.duration)}</span>` : '';
+  const infoIcon = ADMIN ? iconEdit : iconInfo;
+  const mv = ADMIN ? `<div class="mv"><button type="button" data-act="up" title="上移一位">▲</button><button type="button" data-act="down" title="下移一位">▼</button></div>` : '';
+  return `<div class="row" data-id="${esc(t.id)}">
+    <div class="r-num"><span class="n">${i+1}</span><span class="eq"><span></span><span></span><span></span></span></div>
+    <div class="r-cover"><img src="${esc(trackCover(t))}" alt=""></div>
+    <div class="r-main">
+      <div class="r-title" title="${esc(t.title)}">${esc(t.title)}</div>
+      <div class="r-sub"><span class="fmt">${esc(t.fmt||'MP3')}</span>${tags}${note}</div>
     </div>
-    <button class="edit-btn" data-act="edit" title="详情 / 编辑">${iconEdit}</button>
-    <div class="cbody">
-      <div class="ctitle" title="${esc(t.title)}">${esc(t.title)}</div>
-      <div class="ccap" title="${esc(t.note||'')}">${note}</div>
-      <div class="ctags">${tags}</div>
-      <div class="cmeta"><span class="fmt">${esc(t.fmt||'MP3')}</span>${dur?`<span>${dur}</span>`:''}<span>·</span><span>${fmtDate(t.createdAt)}</span></div>
+    ${mv}
+    ${dur}
+    <div class="r-acts">
+      <button class="r-icon" data-act="info" title="${ADMIN?'详情 / 编辑':'详情 / 配文'}">${infoIcon}</button>
+      <button class="r-play" data-act="play" title="播放 / 暂停">${iconPlay}</button>
     </div>
   </div>`;
 }
@@ -978,7 +984,7 @@ function render(){
   $('#library').classList.toggle('hidden', !has);
   $('#tagbar').classList.toggle('hidden', !has);
   $('#noResult').classList.toggle('hidden', !(has && viewList.length === 0));
-  $('#grid').innerHTML = viewList.map(cardHTML).join('');
+  $('#grid').innerHTML = viewList.map(rowHTML).join('');
   const total = tracks.reduce((s,t)=>s+(t.duration||0), 0);
   $('#statCount').textContent = tracks.length;
   $('#statDur').textContent = fmtTime(total);
@@ -986,11 +992,26 @@ function render(){
   markPlayingCard();
 }
 function markPlayingCard(){
-  $$('.card').forEach(c=>{
+  $$('.row').forEach(c=>{
     const active = c.dataset.id === currentId;
     c.classList.toggle('active', active);
     c.classList.toggle('playing', active && !audio.paused);
   });
+}
+
+/* ================= 自定义排序（管理模式） ================= */
+async function moveTrack(id, dir){
+  try{
+    const r = await fetch('api/track/move', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({id, dir})
+    });
+    const j = await r.json();
+    if(!j.ok){ toast(j.message || '移动失败'); return; }
+  }catch(e){ toast('移动失败：无法连接管理服务'); return; }
+  await loadTracks();
+  render();
 }
 
 /* ================= 上传（管理模式） ================= */
@@ -1289,12 +1310,15 @@ function bind(){
   });
 
   $('#grid').addEventListener('click', e=>{
-    const card = e.target.closest('.card');
-    if(!card) return;
-    const id = card.dataset.id;
+    const row = e.target.closest('.row');
+    if(!row) return;
+    const id = row.dataset.id;
     const act = e.target.closest('[data-act]');
-    if(act && act.dataset.act === 'play') togglePlay(id);
-    else openDetail(id);
+    const a = act ? act.dataset.act : '';
+    if(a === 'play'){ togglePlay(id); return; }
+    if(a === 'info'){ openDetail(id); return; }
+    if(a === 'up' || a === 'down'){ moveTrack(id, a); return; }
+    togglePlay(id);
   });
 
   $('#btnPlayAll').addEventListener('click', ()=>{
